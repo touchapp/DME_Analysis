@@ -1,83 +1,90 @@
-# Data Exploration Project
+# Medicare DME Data Analysis
 
-This project provides a structured environment for data exploration and analysis using Jupyter notebooks.
+This repository contains scripts for analyzing Medicare Durable Medical Equipment (DME) data from 2017-2022.
 
-## Getting Started
+## Directory Structure
 
-### Prerequisites
+```
+.
+├── dme_analysis/              # Main package
+│   ├── __init__.py            # Package initialization
+│   ├── utils/                 # Utility modules
+│   │   ├── __init__.py        # Subpackage initialization
+│   │   ├── data_dictionary.py # Data dictionary and column categorization
+│   │   └── data_import.py     # Data import functions
+│   └── ...                    # Analysis modules
+├── dme_data_analysis.py       # Main analysis script
+├── fraud_detector.py          # Fraud detection script
+└── ...                        # Data files and other scripts
+```
 
-- Python 3.8 or higher
-- pip (Python package installer)
+## Usage
 
-### Setup Instructions
+### Importing Data
 
-1. **Clone or download this repository**
+You can import the DME data using the utility functions:
 
-2. **Create a virtual environment (recommended)**
+```python
+from dme_analysis.utils import import_data_for_years
 
-   ```bash
-   # On macOS/Linux
-   python3 -m venv venv
-   source venv/bin/activate
+# Import data for years 2017-2022
+df_by_year = import_data_for_years(range(2017, 2023))
+```
 
-   # On Windows
-   python -m venv venv
-   venv\Scripts\activate
-   ```
+### Data Dictionary
 
-3. **Install the required packages**
+The data dictionary contains descriptions for all columns in the dataset:
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+```python
+from dme_analysis.utils import DATA_DICTIONARY
 
-4. **Launch Jupyter Notebook**
+# Get the description of a column
+print(DATA_DICTIONARY['DME_Tot_Suplr_Benes'])
+```
 
-   ```bash
-   jupyter notebook
-   ```
+### Analyzing the Data
 
-5. **Open the data_exploration.ipynb notebook**
-   - A browser window should open automatically. If not, copy the URL displayed in the terminal and paste it into your web browser.
-   - Navigate to and click on `data_exploration.ipynb` to open the notebook.
-
-## Project Structure
-
-- `data_exploration.ipynb`: Starter Jupyter notebook for data analysis
-- `requirements.txt`: Contains all the Python dependencies
-- `data/`: Directory where you can store your datasets (create this as needed)
-
-## Adding Your Data
-
-You can add your data files to the project:
-
-1. Create a `data` directory (if not already present):
-
-   ```bash
-   mkdir data
-   ```
-
-2. Place your data files (CSV, Excel, etc.) in the `data` directory.
-
-3. In the notebook, load your data:
-   ```python
-   df = pd.read_csv('data/your_file.csv')
-   ```
-
-## Common Tasks
-
-- **Data Loading**: Use pandas to read different file formats (CSV, Excel, JSON, etc.)
-- **Data Cleaning**: Handle missing values, duplicates, outliers
-- **Exploratory Analysis**: Descriptive statistics, correlation analysis
-- **Data Visualization**: Create charts and plots using matplotlib and seaborn
-- **Feature Engineering**: Create new features or transform existing ones
-- **Model Building**: Build and evaluate machine learning models using scikit-learn
-
-## Useful Extensions
-
-Consider installing these additional Jupyter extensions for enhanced productivity:
+The main analysis script can be run directly:
 
 ```bash
-pip install jupyterlab  # JupyterLab interface
-pip install nbextensions  # Notebook extensions
+python dme_data_analysis.py
 ```
+
+Or imported in a Jupyter notebook:
+
+```python
+import dme_data_analysis as dme
+%matplotlib inline
+
+# Run the analysis
+df_by_year, visualizations = dme.main()
+
+# Display visualizations
+visualizations['spending_trends']
+```
+
+### Fraud Detection
+
+The fraud detection script can be used to identify potential fraud patterns:
+
+```python
+import fraud_detector as fd
+%matplotlib inline
+
+# Run the fraud detection analysis
+df_by_year, visualizations, data = fd.main()
+
+# Display fraud indicators
+visualizations['high_growth_suppliers']
+```
+
+## Column Descriptions
+
+The DME dataset contains the following types of columns:
+
+1. Supplier Information (e.g., `Suplr_NPI`, `Suplr_Prvdr_Last_Name_Org`)
+2. DME-specific fields (e.g., `DME_Tot_Suplr_Benes`, `DME_Suplr_Mdcr_Pymt_Amt`)
+3. Prosthetic and Orthotic fields (e.g., `POS_Tot_Suplr_Benes`, `POS_Suplr_Mdcr_Pymt_Amt`)
+4. Drug and Nutritional fields (e.g., `Drug_Tot_Suplr_Benes`, `Drug_Suplr_Mdcr_Pymt_Amt`)
+5. Beneficiary Demographics (e.g., `Bene_Avg_Age`, `Bene_Feml_Cnt`)
+6. Health Conditions (e.g., `Bene_CC_PH_Hypertension_V2_Pct`, `Bene_CC_BH_Mood_V2_Pct`)

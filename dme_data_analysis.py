@@ -15,176 +15,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import sys
 
-
-def import_dme_data(file_path):
-    """
-    Import and preprocess DME data from a CSV file.
-
-    Parameters:
-    -----------
-    file_path : str
-        Path to the CSV file containing DME data
-
-    Returns:
-    --------
-    df : DataFrame
-        Processed DataFrame containing DME data
-    """
-    print(f"Importing data from {file_path}...")
-
-    try:
-        # Import data with appropriate dtypes to handle monetary values correctly
-        df = pd.read_csv(file_path, low_memory=False)
-
-        # Convert monetary columns to numeric
-        money_columns = [
-            col for col in df.columns if 'Pymt' in col or 'Amt' in col]
-        for col in money_columns:
-            if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-
-        print(f"Successfully imported data with shape: {df.shape}")
-        return df
-
-    except Exception as e:
-        print(f"Error importing data: {str(e)}")
-        return None
-
-
-# Data dictionary mapping variable names to their descriptions
-DATA_DICTIONARY = {
-    # Supplier Information
-    "Suplr_NPI": "Supplier NPI - NPI for the Supplier on the DMEPOS claim",
-    "Suplr_Prvdr_Last_Name_Org": "Supplier Last Name/Organization Name - When registered as individual, the Supplier's last name. When registered as organization, this is the organization name",
-    "Suplr_Prvdr_First_Name": "Supplier First Name - When registered as individual, the Supplier's first name",
-    "Suplr_Prvdr_MI": "Supplier Middle Initial - When registered as individual, the Supplier's middle initial",
-    "Suplr_Prvdr_Crdntls": "Supplier Credentials - When registered as individual, these are the Supplier's credentials",
-    "Suplr_Prvdr_Gndr": "Supplier Gender - When registered as individual, this is the Supplier's gender",
-    "Suplr_Prvdr_Ent_Cd": "Supplier Entity Code - 'I' identifies Suppliers registered as individuals, 'O' identifies Suppliers registered as organizations",
-    "Suplr_Prvdr_St1": "Supplier Street 1 - First line of the Supplier's street address",
-    "Suplr_Prvdr_St2": "Supplier Street 2 - Second line of the Supplier's street address",
-    "Suplr_Prvdr_City": "Supplier City - The city where the Supplier is located",
-    "Suplr_Prvdr_State_Abrvtn": "Supplier State - State postal abbreviation where the Supplier is located",
-    "Suplr_Prvdr_State_FIPS": "Supplier State FIPS Code - FIPS code for Supplier's state",
-    "Suplr_Prvdr_Zip5": "Supplier ZIP - The Supplier's ZIP code",
-    "Suplr_Prvdr_RUCA": "Supplier RUCA - Rural-Urban Commuting Area Code for the Supplier ZIP code",
-    "Suplr_Prvdr_RUCA_Desc": "Supplier RUCA Description - Description of Rural-Urban Commuting Area (RUCA) Code",
-    "Suplr_Prvdr_Cntry": "Supplier Country - Country where the Supplier is located",
-    "Suplr_Prvdr_Spclty_Desc": "Supplier Provider Specialty Description - Derived from Medicare provider/supplier specialty code",
-    "Suplr_Prvdr_Spclty_Srce": "Supplier Provider Specialty Source - Source of the Supplier Specialty (claims-specialty or NPPES-specialty)",
-
-    # Total Supplier Claims/Services
-    "Tot_Suplr_HCPCS_Cds": "Number of Supplier HCPCS - Total unique DMEPOS product/service HCPCS codes",
-    "Tot_Suplr_Benes": "Number of Supplier Beneficiaries - Total unique beneficiaries (<11 are suppressed)",
-    "Tot_Suplr_Clms": "Number of Supplier Claims - Total DMEPOS claims submitted",
-    "Tot_Suplr_Srvcs": "Number of Supplier Services - Total DMEPOS products/services rendered",
-    "Suplr_Sbmtd_Chrgs": "Supplier Submitted Charges - Total charges submitted for DMEPOS products/services",
-    "Suplr_Mdcr_Alowd_Amt": "Supplier Medicare Allowed Amount - Total Medicare allowed amount",
-    "Suplr_Mdcr_Pymt_Amt": "Supplier Medicare Payment Amount - Amount Medicare paid after deductible/coinsurance",
-    "Suplr_Mdcr_Stdzd_Pymt_Amt": "Supplier Medicare Standard Payment Amount - Standardized Medicare payments",
-
-    # DME-specific Fields
-    "DME_Sprsn_Ind": "Durable Medical Equipment Suppression Indicator - '*'=suppressed (1-10 claims), '#'=counter-suppressed",
-    "DME_Tot_Suplr_HCPCS_Cds": "Number of DME HCPCS - Total unique DME HCPCS codes",
-    "DME_Tot_Suplr_Benes": "Number of DME Beneficiaries - Total unique beneficiaries with DME claims (<11 are suppressed)",
-    "DME_Tot_Suplr_Clms": "Number of DME Claims - Total DME claims submitted",
-    "DME_Tot_Suplr_Srvcs": "Number of DME Services - Total DME products/services rendered",
-    "DME_Suplr_Sbmtd_Chrgs": "DME Submitted Charges - Total charges submitted for DME products/services",
-    "DME_Suplr_Mdcr_Alowd_Amt": "DME Medicare Allowed Amount - Total Medicare allowed amount for DME",
-    "DME_Suplr_Mdcr_Pymt_Amt": "DME Medicare Payment Amount - Amount Medicare paid for DME after deductible/coinsurance",
-    "DME_Suplr_Mdcr_Stdzd_Pymt_Amt": "DME Medicare Standard Payment Amount - Standardized Medicare payments for DME",
-
-    # Prosthetic and Orthotic Fields
-    "POS_Sprsn_Ind": "Prosthetic and Orthotic Suppression Indicator - '*'=suppressed (1-10 claims), '#'=counter-suppressed",
-    "POS_Tot_Suplr_HCPCS_Cds": "Number of Prosthetic/Orthotic HCPCS - Total unique prosthetic/orthotic HCPCS codes",
-    "POS_Tot_Suplr_Benes": "Number of Prosthetic/Orthotic Beneficiaries - Total unique beneficiaries",
-    "POS_Tot_Suplr_Clms": "Number of Prosthetic/Orthotic Claims - Total prosthetic/orthotic claims submitted",
-    "POS_Tot_Suplr_Srvcs": "Number of Prosthetic/Orthotic Services - Total prosthetic/orthotic products/services",
-    "POS_Suplr_Sbmtd_Chrgs": "Prosthetic/Orthotic Submitted Charges - Total charges submitted for prosthetic/orthotic",
-    "POS_Suplr_Mdcr_Alowd_Amt": "Prosthetic/Orthotic Medicare Allowed Amount - Total Medicare allowed amount",
-    "POS_Suplr_Mdcr_Pymt_Amt": "Prosthetic/Orthotic Medicare Payment Amount - Amount Medicare paid after deductible/coinsurance",
-    "POS_Suplr_Mdcr_Stdzd_Pymt_Amt": "Prosthetic/Orthotic Medicare Standard Payment Amount - Standardized Medicare payments",
-
-    # Drug and Nutritional Fields
-    "Drug_Sprsn_Ind": "Drug and Nutritional Suppression Indicator - '*'=suppressed (1-10 claims), '#'=counter-suppressed",
-    "Drug_Tot_Suplr_HCPCS_Cds": "Number of Drug/Nutritional HCPCS - Total unique drug/nutritional HCPCS codes",
-    "Drug_Tot_Suplr_Benes": "Number of Drug/Nutritional Beneficiaries - Total unique beneficiaries",
-    "Drug_Tot_Suplr_Clms": "Number of Drug/Nutritional Claims - Total drug/nutritional claims submitted",
-    "Drug_Tot_Suplr_Srvcs": "Number of Drug/Nutritional Services - Total drug/nutritional products/services",
-    "Drug_Suplr_Sbmtd_Chrgs": "Drug/Nutritional Submitted Charges - Total charges submitted for drug/nutritional",
-    "Drug_Suplr_Mdcr_Alowd_Amt": "Drug/Nutritional Medicare Allowed Amount - Total Medicare allowed amount",
-    "Drug_Suplr_Mdcr_Pymt_Amt": "Drug/Nutritional Medicare Payment Amount - Amount Medicare paid after deductible/coinsurance",
-    "Drug_Suplr_Mdcr_Stdzd_Pymt_Amt": "Drug/Nutritional Medicare Standard Payment Amount - Standardized Medicare payments",
-
-    # Beneficiary Demographics
-    "Bene_Avg_Age": "Average Age of Beneficiaries - Average age at end of calendar year or time of death",
-    "Bene_Age_LT_65_Cnt": "Number of Beneficiaries <65 - Count of beneficiaries under 65 years old",
-    "Bene_Age_65_74_Cnt": "Number of Beneficiaries 65-74 - Count of beneficiaries between 65-74 years old",
-    "Bene_Age_75_84_Cnt": "Number of Beneficiaries 75-84 - Count of beneficiaries between 75-84 years old",
-    "Bene_Age_GT_84_Cnt": "Number of Beneficiaries >84 - Count of beneficiaries over 84 years old",
-    "Bene_Feml_Cnt": "Number of Female Beneficiaries - Count of female beneficiaries",
-    "Bene_Male_Cnt": "Number of Male Beneficiaries - Count of male beneficiaries",
-    "Bene_Race_Wht_Cnt": "Number of White Beneficiaries - Count of non-Hispanic white beneficiaries",
-    "Bene_Race_Black_Cnt": "Number of Black Beneficiaries - Count of non-Hispanic Black/African American beneficiaries",
-    "Bene_Race_Api_Cnt": "Number of Asian/PI Beneficiaries - Count of Asian Pacific Islander beneficiaries",
-    "Bene_Race_Hspnc_Cnt": "Number of Hispanic Beneficiaries - Count of Hispanic beneficiaries",
-    "Bene_Race_Natind_Cnt": "Number of Native American/Alaska Native Beneficiaries - Count of American Indian/Alaska Native beneficiaries",
-    "Bene_Race_Othr_Cnt": "Number of Other Race Beneficiaries - Count of beneficiaries with race not elsewhere classified",
-    "Bene_Ndual_Cnt": "Number of Medicare & Medicaid Beneficiaries - Count of dual-eligible beneficiaries",
-    "Bene_Dual_Cnt": "Number of Medicare-Only Beneficiaries - Count of Medicare-only beneficiaries",
-
-    # Beneficiary Health Conditions (Mental/Behavioral Health)
-    "Bene_CC_BH_ADHD_OthCD_V1_Pct": "Percent with ADHD and Other Conduct Disorders",
-    "Bene_CC_BH_Alcohol_Drug_V1_Pct": "Percent with Alcohol and Drug Use Disorders",
-    "Bene_CC_BH_Tobacco_V1_Pct": "Percent with Tobacco Use Disorders",
-    "Bene_CC_BH_Alz_NonAlzdem_V2_Pct": "Percent with Alzheimer's and Non-Alzheimer's Dementia",
-    "Bene_CC_BH_Anxiety_V1_Pct": "Percent with Anxiety Disorders",
-    "Bene_CC_BH_Bipolar_V1_Pct": "Percent with Bipolar Disorder",
-    "Bene_CC_BH_Mood_V2_Pct": "Percent with Depression, Bipolar or Other Mood Disorders",
-    "Bene_CC_BH_Depress_V1_Pct": "Percent with Major Depressive Affective Disorder",
-    "Bene_CC_BH_PD_V1_Pct": "Percent with Personality Disorders",
-    "Bene_CC_BH_PTSD_V1_Pct": "Percent with Post-Traumatic Stress Disorder",
-    "Bene_CC_BH_Schizo_OthPsy_V1_Pct": "Percent with Schizophrenia and Other Psychotic Disorders",
-
-    # Beneficiary Health Conditions (Physical Health)
-    "Bene_CC_PH_Asthma_V2_Pct": "Percent with Asthma",
-    "Bene_CC_PH_Afib_V2_Pct": "Percent with Atrial Fibrillation and Flutter",
-    "Bene_CC_PH_Cancer6_V2_Pct": "Percent with Cancer (combined 6 cancer indicators)",
-    "Bene_CC_PH_CKD_V2_Pct": "Percent with Chronic Kidney Disease",
-    "Bene_CC_PH_COPD_V2_Pct": "Percent with Chronic Obstructive Pulmonary Disease",
-    "Bene_CC_PH_Diabetes_V2_Pct": "Percent with Diabetes",
-    "Bene_CC_PH_HF_NonIHD_V2_Pct": "Percent with Heart Failure and Non-Ischemic Heart Disease",
-    "Bene_CC_PH_Hyperlipidemia_V2_Pct": "Percent with Hyperlipidemia",
-    "Bene_CC_PH_Hypertension_V2_Pct": "Percent with Hypertension",
-    "Bene_CC_PH_IschemicHeart_V2_Pct": "Percent with Ischemic Heart Disease",
-    "Bene_CC_PH_Osteoporosis_V2_Pct": "Percent with Osteoporosis",
-    "Bene_CC_PH_Parkinson_V2_Pct": "Percent with Parkinson's Disease",
-    "Bene_CC_PH_Arthritis_V2_Pct": "Percent with Rheumatoid Arthritis/Osteoarthritis",
-    "Bene_CC_PH_Stroke_TIA_V2_Pct": "Percent with Stroke/Transient Ischemic Attack",
-
-    # Risk Score
-    "Bene_Avg_Risk_Scre": "Average HCC Risk Score of Beneficiaries"
-}
-
-
-def get_column_category(column_name):
-    """Return the category for a given column name based on prefix."""
-    if column_name.startswith('Suplr_'):
-        return "Supplier Information"
-    elif column_name.startswith('DME_'):
-        return "Durable Medical Equipment"
-    elif column_name.startswith('POS_'):
-        return "Prosthetics and Orthotics"
-    elif column_name.startswith('Drug_'):
-        return "Drug and Nutritional Products"
-    elif column_name.startswith('Bene_CC_BH_'):
-        return "Beneficiary Behavioral Health Conditions"
-    elif column_name.startswith('Bene_CC_PH_'):
-        return "Beneficiary Physical Health Conditions"
-    elif column_name.startswith('Bene_'):
-        return "Beneficiary Demographics"
-    else:
-        return "Other"
+# Import from the new module structure
+from dme_analysis.utils import (
+    DATA_DICTIONARY,
+    get_column_category,
+    import_data_for_years
+)
 
 
 def get_top_suppliers(df, top_n=10):
@@ -687,19 +523,12 @@ def main():
     print("DME Data Analysis")
     print("================\n")
 
-    # Dictionary to store dataframes by year
-    df_by_year = {}
+    # Import data for years 2017-2022 using the utility function
+    df_by_year = import_data_for_years(range(2017, 2023))
 
-    # Import data for years 2017-2022
-    for year in range(2017, 2023):
-        csv_path = f"data/{year}/mup_dme_ry24_p05_v10_dy{str(year)[-2:]}_supr.csv"
-        if os.path.exists(csv_path):
-            print(f"Importing data for {year}...")
-            df_by_year[year] = pd.read_csv(csv_path, low_memory=False)
-            print(
-                f"✓ Data for {year} imported successfully. Shape: {df_by_year[year].shape}")
-        else:
-            print(f"Warning: No data file found for {year}")
+    if not df_by_year:
+        print("Error: No data files were found. Cannot proceed with analysis.")
+        return {}, {}
 
     print("\nAll available data files have been imported.")
 
