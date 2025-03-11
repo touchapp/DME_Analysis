@@ -15,6 +15,7 @@ alwaysApply: false
     - Prefer vectorized operations over explicit loops for better performance.
     - Use descriptive variable names that reflect the data they contain.
     - Follow PEP 8 style guidelines for Python code.
+    - Only import things that are used 
 
     Data Analysis and Manipulation:
     - Use pandas for data manipulation and analysis.
